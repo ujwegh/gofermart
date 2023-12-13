@@ -4,31 +4,35 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	appErrors "github.com/ujwegh/gophermart/internal/app/errors"
 	"github.com/ujwegh/gophermart/internal/app/models"
 	"github.com/ujwegh/gophermart/internal/app/repository"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
-	"strings"
+	"time"
 )
 
 type UserService interface {
-	Create(ctx context.Context, email, password string) (*models.User, error)
-	Authenticate(ctx context.Context, email, password string) (*models.User, error)
-	GetByUserEmail(ctx context.Context, email string) (*models.User, error)
+	Create(ctx context.Context, login, password string) (*models.User, error)
+	Authenticate(ctx context.Context, login, password string) (*models.User, error)
+	GetByUserLogin(ctx context.Context, login string) (*models.User, error)
 }
 
 type UserServiceImpl struct {
-	userRepo repository.UserRepository
+	userRepo      repository.UserRepository
+	walletService WalletService
 }
 
-func NewUserService(userRepo repository.UserRepository) *UserServiceImpl {
-	return &UserServiceImpl{userRepo: userRepo}
+func NewUserService(userRepo repository.UserRepository, walletService WalletService) *UserServiceImpl {
+	return &UserServiceImpl{
+		userRepo:      userRepo,
+		walletService: walletService,
+	}
 }
 
-func (us *UserServiceImpl) Authenticate(ctx context.Context, email, password string) (*models.User, error) {
-	email = strings.ToLower(email)
-	user, err := us.GetByUserEmail(ctx, email)
+func (us *UserServiceImpl) Authenticate(ctx context.Context, login, password string) (*models.User, error) {
+	user, err := us.GetByUserLogin(ctx, login)
 	if err != nil {
 		return nil, err
 	}
@@ -39,9 +43,8 @@ func (us *UserServiceImpl) Authenticate(ctx context.Context, email, password str
 	return user, nil
 }
 
-func (us *UserServiceImpl) GetByUserEmail(ctx context.Context, email string) (*models.User, error) {
-	email = strings.ToLower(email)
-	user, err := us.userRepo.FindByEmail(ctx, email)
+func (us *UserServiceImpl) GetByUserLogin(ctx context.Context, login string) (*models.User, error) {
+	user, err := us.userRepo.FindByLogin(ctx, login)
 	if err != nil {
 		appErr := &appErrors.ResponseCodeError{}
 		if errors.As(err, appErr) {
@@ -52,22 +55,34 @@ func (us *UserServiceImpl) GetByUserEmail(ctx context.Context, email string) (*m
 	return user, nil
 }
 
-func (us *UserServiceImpl) Create(ctx context.Context, email, password string) (*models.User, error) {
-	email = strings.ToLower(email)
+func (us *UserServiceImpl) Create(ctx context.Context, login, password string) (*models.User, error) {
 	passwordHash := generatePasswordHash(password)
 	user := &models.User{
-		Email:        email,
+		UUID:         uuid.New(),
+		Login:        login,
 		PasswordHash: passwordHash,
+		CreatedAt:    time.Now(),
 	}
-	err := us.userRepo.Create(ctx, user)
+	tx, err := us.userRepo.GetDB().BeginTxx(ctx, nil)
 	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	if err := us.userRepo.Create(ctx, tx, user); err != nil {
 		appErr := &appErrors.ResponseCodeError{}
 		if errors.As(err, appErr) {
 			return nil, appErrors.NewWithCode(err, appErr.Msg(), http.StatusConflict)
 		}
 		return nil, fmt.Errorf("create user: %w", err)
 	}
-	return user, nil
+
+	err = us.walletService.CreateWallet(ctx, tx, &user.UUID)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, tx.Commit()
 }
 
 func generatePasswordHash(password string) string {

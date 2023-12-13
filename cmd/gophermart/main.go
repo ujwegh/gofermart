@@ -8,9 +8,11 @@ import (
 	"github.com/ujwegh/gophermart/internal/app/handlers"
 	"github.com/ujwegh/gophermart/internal/app/logger"
 	middlware "github.com/ujwegh/gophermart/internal/app/middleware"
+	"github.com/ujwegh/gophermart/internal/app/models"
 	"github.com/ujwegh/gophermart/internal/app/repository"
 	"github.com/ujwegh/gophermart/internal/app/router"
 	"github.com/ujwegh/gophermart/internal/app/service"
+	"github.com/ujwegh/gophermart/internal/app/service/clients"
 	"log"
 	"net/http"
 	"os"
@@ -27,14 +29,35 @@ func main() {
 	c := config.ParseFlags()
 	logger.InitLogger(c.LogLevel)
 
+	//setup repositories
 	ts := service.NewTokenService(c)
 	s := repository.NewDBStorage(c)
-	ur := repository.NewUserRepository(s.DbConn)
-	us := service.NewUserService(ur)
+	ur := repository.NewUserRepository(s.DBConn)
+	or := repository.NewOrderRepository(s.DBConn)
+	wr := repository.NewWalletRepository(s.DBConn)
+	wlr := repository.NewWithdrawalsRepository(s.DBConn)
+
+	processOrderChannel := make(chan models.Order, 100)
+	//setup services
+	ws := service.NewWalletService(wr)
+	ors := service.NewOrderService(or, ws, processOrderChannel)
+	oc := service.NewOrderCache(10*time.Second, 5*time.Minute, processOrderChannel)
+	ac := clients.NewAccrualClient(c)
+	wls := service.NewWithdrawalService(wlr, ws)
+	us := service.NewUserService(ur, ws)
+
+	// setup handlers
 	uh := handlers.NewUserHandler(us, ts, c.TokenLifetimeSec)
+	oh := handlers.NewOrdersHandler(c.ContextTimeoutSec, ors)
+	bh := handlers.NewBalanceHandler(c.ContextTimeoutSec, ws, wls)
+
 	am := middlware.NewAuthMiddleware(ts, us, c.ContextTimeoutSec)
 
-	r := router.NewAppRouter(uh, am)
+	r := router.NewAppRouter(uh, oh, bh, am)
+
+	// Start the goroutine
+	op := service.NewOrderProcessor(or, oc, ws, ac, processOrderChannel)
+	go op.ProcessOrders(serverCtx)
 
 	// The HTTP Server
 	server := &http.Server{Addr: c.ServerAddr, Handler: r}
@@ -48,7 +71,7 @@ func main() {
 		// Shutdown signal with grace period of 30 seconds
 		shutdownCtx, cancelFunc := context.WithTimeout(serverCtx, 30*time.Second)
 		cancelFunc()
-
+		close(processOrderChannel)
 		go func() {
 			<-shutdownCtx.Done()
 			if shutdownCtx.Err() == context.DeadlineExceeded {

@@ -15,7 +15,7 @@ type ErrorResponse struct {
 }
 
 func PrepareError(w http.ResponseWriter, err error) {
-	var codeErr *appErrors.ResponseCodeError
+	var codeErr appErrors.ResponseCodeError
 	logger.Log.Error("internal error: ", zap.Error(err))
 	if errors.As(err, &codeErr) {
 		WriteJSONErrorResponse(w, codeErr.Msg(), codeErr.Code())

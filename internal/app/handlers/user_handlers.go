@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	appContext "github.com/ujwegh/gophermart/internal/app/context"
 	appErrors "github.com/ujwegh/gophermart/internal/app/errors"
 	"github.com/ujwegh/gophermart/internal/app/models"
@@ -28,10 +29,6 @@ type (
 	UserRegisterDto struct {
 		Login    string `json:"login"`
 		Password string `json:"password"`
-	}
-	//easyjson:json
-	AccessTokenDto struct {
-		AccessToken string `json:"access_token"`
 	}
 )
 
@@ -61,13 +58,19 @@ func (uh *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if registerDto.Login == "" || registerDto.Password == "" {
+		err = appErrors.NewWithCode(err, "Login and password are required", http.StatusBadRequest)
+		PrepareError(w, err)
+		return
+	}
+
 	user, err := uh.userService.Create(ctx, registerDto.Login, registerDto.Password)
 	if err != nil {
 		PrepareError(w, err)
 		return
 	}
 
-	accessTokenDtoBytes, err := uh.generateToken(user, err)
+	token, err := uh.generateToken(user)
 	if err != nil {
 		PrepareError(w, err)
 		return
@@ -78,9 +81,10 @@ func (uh *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		PrepareError(w, err)
 		return
 	}
-
+	bearerToken := fmt.Sprintf("Bearer %s", token)
+	w.Header().Add("Authorization", bearerToken)
 	w.WriteHeader(http.StatusOK)
-	w.Write(accessTokenDtoBytes)
+	fmt.Fprintf(w, "%s", bearerToken)
 }
 
 func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -102,13 +106,19 @@ func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if loginDto.Login == "" || loginDto.Password == "" {
+		err = appErrors.NewWithCode(err, "Login and password are required", http.StatusBadRequest)
+		PrepareError(w, err)
+		return
+	}
+
 	user, err := uh.userService.Authenticate(ctx, loginDto.Login, loginDto.Password)
 	if err != nil {
 		PrepareError(w, err)
 		return
 	}
 
-	accessTokenDtoBytes, err := uh.generateToken(user, err)
+	token, err := uh.generateToken(user)
 	if err != nil {
 		PrepareError(w, err)
 		return
@@ -119,19 +129,16 @@ func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		PrepareError(w, err)
 		return
 	}
+	bearerToken := fmt.Sprintf("Bearer %s", token)
+	w.Header().Add("Authorization", bearerToken)
 	w.WriteHeader(http.StatusOK)
-	w.Write(accessTokenDtoBytes)
+	fmt.Fprintf(w, "%s", bearerToken)
 }
 
-func (uh *UserHandler) generateToken(user *models.User, err error) ([]byte, error) {
-	token, err := uh.tokenService.GenerateToken(user.Email)
+func (uh *UserHandler) generateToken(user *models.User) (string, error) {
+	token, err := uh.tokenService.GenerateToken(user.Login)
 	if err != nil {
-		return nil, appErrors.NewWithCode(err, "Unable to generate token", http.StatusInternalServerError)
+		return "", appErrors.NewWithCode(err, "Unable to generate token", http.StatusInternalServerError)
 	}
-	accessTokenDto := AccessTokenDto{AccessToken: token}
-	accessTokenDtoBytes, err := accessTokenDto.MarshalJSON()
-	if err != nil {
-		return nil, appErrors.NewWithCode(err, "Unable to marshal token", http.StatusInternalServerError)
-	}
-	return accessTokenDtoBytes, nil
+	return token, nil
 }

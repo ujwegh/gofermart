@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/jackc/pgerrcode"
@@ -12,8 +13,9 @@ import (
 )
 
 type UserRepository interface {
-	Create(ctx context.Context, user *models.User) error
-	FindByEmail(ctx context.Context, email string) (*models.User, error)
+	Create(ctx context.Context, tx *sqlx.Tx, user *models.User) error
+	FindByLogin(ctx context.Context, login string) (*models.User, error)
+	GetDB() *sqlx.DB
 }
 
 type UserRepositoryImpl struct {
@@ -24,41 +26,38 @@ func NewUserRepository(db *sqlx.DB) *UserRepositoryImpl {
 	return &UserRepositoryImpl{db: db}
 }
 
-func (ur *UserRepositoryImpl) FindByEmail(ctx context.Context, email string) (*models.User, error) {
-	query := `SELECT uuid, email, name, password_hash FROM users WHERE email = $1;`
+func (ur *UserRepositoryImpl) FindByLogin(ctx context.Context, login string) (*models.User, error) {
+	query := `SELECT * FROM users WHERE login = $1;`
 	user := models.User{}
-	err := ur.db.GetContext(ctx, &user, query, email)
+	err := ur.db.GetContext(ctx, &user, query, login)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, appErrors.New(err, "User not found")
+		}
 		return nil, fmt.Errorf("get user: %w", err)
-	}
-	if user.Email == "" {
-		return nil, appErrors.New(err, "User not found")
 	}
 	return &user, nil
 }
 
-func (ur *UserRepositoryImpl) Create(ctx context.Context, user *models.User) error {
-	tx, err := ur.db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("begin transaction: %w", err)
-	}
-	query := `INSERT INTO users (uuid, email, name, password_hash) VALUES ($1, $2, $3, $4);`
+func (ur *UserRepositoryImpl) Create(ctx context.Context, tx *sqlx.Tx, user *models.User) error {
+	query := `INSERT INTO users (uuid, login, password_hash, created_at) VALUES ($1, $2, $3, $4);`
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("prepare statement: %w", err)
 	}
 	defer stmt.Close()
 
-	_, err = stmt.ExecContext(ctx, query, user.UUID, user.Email, user.PasswordHash)
+	_, err = stmt.ExecContext(ctx, user.UUID, user.Login, user.PasswordHash, user.CreatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return appErrors.New(err, "User already exists")
 		}
-		if err := tx.Rollback(); err != nil {
-			return fmt.Errorf("rollback transaction: %w", err)
-		}
 		return fmt.Errorf("exec statement: %w", err)
 	}
-	return tx.Commit()
+	return nil
+}
+
+func (ur *UserRepositoryImpl) GetDB() *sqlx.DB {
+	return ur.db
 }

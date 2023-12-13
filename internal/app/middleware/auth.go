@@ -32,16 +32,21 @@ func (am *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 		defer cancel()
 
 		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			logger.Log.Error("auth header is empty")
+			handlers.WriteJSONErrorResponse(w, "Unauthorized: Empty auth header", http.StatusUnauthorized)
+			return
+		}
 		token := strings.Split(authHeader, "Bearer ")[1]
 
-		userEmail, err := am.tokenService.GetUserEmail(token)
+		userEmail, err := am.tokenService.GetUserLogin(token)
 		if err != nil {
-			logger.Log.Error("failed to get user email", zap.Error(err))
+			logger.Log.Error("failed to get user login", zap.Error(err))
 			handlers.WriteJSONErrorResponse(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
 			return
 		}
 
-		user, err := am.userService.GetByUserEmail(ctx, userEmail)
+		user, err := am.userService.GetByUserLogin(ctx, userEmail)
 		if err != nil {
 			logger.Log.Error("failed to get user", zap.Error(err))
 			handlers.WriteJSONErrorResponse(w, "Unauthorized: User not found", http.StatusUnauthorized)
