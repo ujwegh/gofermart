@@ -22,14 +22,13 @@ import (
 	"time"
 )
 
-// @title           Swagger Example API
+// @title           Swagger Docs for Gophermart API
 // @version         1.0
 // @description     This is a `gophermart` service. It allows users to create orders, credit/debit their wallets and withdraw funds from their wallets using the accrual service.
 // @termsOfService  http://swagger.io/terms/
 
-// @contact.name   API Support
-// @contact.url    http://www.swagger.io/support
-// @contact.email  support@swagger.io
+// @contact.name   Nikita Aleksandrov
+// @contact.email  nik29200018@gmail.com
 
 // @license.name  Apache 2.0
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
