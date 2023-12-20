@@ -48,9 +48,17 @@ func NewBalanceHandler(contextTimeoutSec int, walletService service.WalletServic
 	}
 }
 
-/** GetBalance
- * @api {get} Returns the current balance of a user's loyalty points account
- */
+// GetBalance godoc
+// @Summary Getting the user's current balance
+// @Description The handler returns the current amount of loyalty points and the total amount of points
+// withdrawn during the entire registration period for an authorized user.
+// @Tags balance
+// @Produce json
+// @Success 200 {object} BalanceDto "Current and withdrawn loyalty points"
+// @Failure 401 {object} ErrorResponse "Unauthorized - The user is not authorized"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
+// @Security ApiKeyAuth
+// @Router /api/user/balance [get]
 func (bh *BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), bh.contextTimeout)
 	defer cancel()
@@ -82,9 +90,21 @@ func (bh *BalanceHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	w.Write(json)
 }
 
-/**
- * @api {post} Requests to write off points from the savings account towards payment of a new order
- */
+// Withdraw godoc
+// @Summary Request for debiting funds
+// @Description The handler allows an authorized user to debit points from their account for a hypothetical new order.
+// @Tags balance
+// @Accept json
+// @Produce json
+// @Param withdrawal body WithdrawRequestDTO true "Withdrawal Request"
+// @Success 200 "Successful processing of the request"
+// @Failure 400 {object} ErrorResponse "Bad Request - Unable to read body or parse body"
+// @Failure 401 {object} ErrorResponse "Unauthorized - The user is not authorized"
+// @Failure 402 {object} ErrorResponse "Payment Required - Insufficient funds in the account"
+// @Failure 422 {object} ErrorResponse "Unprocessable Entity - Incorrect order number format"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
+// @Security ApiKeyAuth
+// @Router /api/user/balance/withdraw [post]
 func (bh *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), bh.contextTimeout)
 	defer cancel()
@@ -126,9 +146,18 @@ func (bh *BalanceHandler) Withdraw(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-/**
- * @api {get} Returns information about the withdrawal of funds from the savings account by the user
- */
+// GetWithdrawals godoc
+// @Summary Receiving information about the withdrawal of funds
+// @Description The handler returns information about the withdrawal of funds,
+// sorted by the time of withdrawal from oldest to newest for an authorized user.
+// @Tags withdrawals
+// @Produce json
+// @Success 200 {array} WithdrawalDTO "List of withdrawals with details"
+// @Success 204 "No withdrawals to display"
+// @Failure 401 {object} ErrorResponse "Unauthorized - The user is not authorized"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
+// @Security ApiKeyAuth
+// @Router /api/user/withdrawals [get]
 func (bh *BalanceHandler) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), bh.contextTimeout)
 	defer cancel()

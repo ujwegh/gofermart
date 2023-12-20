@@ -40,6 +40,18 @@ func NewUserHandler(userService service.UserService, tokenService service.TokenS
 	}
 }
 
+// Register godoc
+// @Summary User registration
+// @Description Registration is carried out using a login/password pair. Each login must be unique.
+// After successful registration, automatic user authentication should occur.
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param user body UserRegisterDto true "User Registration Information"
+// @Success 200 {string} string "Bearer <token>"
+// @Failure 400 {object} ErrorResponse "Bad Request"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
+// @Router /api/user/register [post]
 func (uh *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), uh.contextTimeout)
 	defer cancel()
@@ -87,6 +99,18 @@ func (uh *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", bearerToken)
 }
 
+// Login godoc
+// @Summary User login
+// @Description Authenticates a user using a login/password pair and returns a bearer token if successful.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body UserLoginDto true "User Login Credentials"
+// @Success 200 {string} string "Bearer <token>"
+// @Failure 400 {object} ErrorResponse "Bad Request - Unable to read body or parse body or login and password are required"
+// @Failure 401 {object} ErrorResponse "Unauthorized - Invalid login credentials"
+// @Failure 500 {object} ErrorResponse "Internal Server Error - Unable to generate token"
+// @Router /api/user/login [post]
 func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), uh.contextTimeout)
 	defer cancel()

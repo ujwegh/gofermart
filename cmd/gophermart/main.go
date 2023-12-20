@@ -22,6 +22,27 @@ import (
 	"time"
 )
 
+// @title           Swagger Example API
+// @version         1.0
+// @description     This is a `gophermart` service. It allows users to create orders, credit/debit their wallets and withdraw funds from their wallets using the accrual service.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.swagger.io/support
+// @contact.email  support@swagger.io
+
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:8080
+// @BasePath  /api/user
+
+// @securityDefinitions.apikey  ApiKeyAuth
+// @in header
+// @name Authorization
+
+// @externalDocs.description  OpenAPI
+// @externalDocs.url          https://swagger.io/resources/open-api/
 func main() {
 	// Server run context
 	serverCtx, serverStopCtx := context.WithCancel(context.Background())
@@ -53,7 +74,7 @@ func main() {
 
 	am := middlware.NewAuthMiddleware(ts, us, c.ContextTimeoutSec)
 
-	r := router.NewAppRouter(uh, oh, bh, am)
+	r := router.NewAppRouter(c.ServerAddr, uh, oh, bh, am)
 
 	// Start the goroutine
 	op := service.NewOrderProcessor(or, oc, ws, ac, processOrderChannel)

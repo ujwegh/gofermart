@@ -39,6 +39,25 @@ func NewOrdersHandler(contextTimeoutSec int, orderService service.OrderService) 
 	}
 }
 
+// CreateOrder godoc
+// @Summary Loading order number
+// @Description The handler is only available to authenticated users and is used to upload a new order number.
+//
+//	The order number is a sequence of digits of arbitrary length and can be validated using the Luhn algorithm.
+//
+// @Tags order
+// @Accept plain
+// @Produce json
+// @Param order body string true "Order Number"
+// @Success 200 "The order number has already been uploaded by this user"
+// @Success 202 "The new order number has been accepted for processing"
+// @Failure 400 {object} ErrorResponse "Bad Request - Unable to read body or incorrect request format"
+// @Failure 401 {object} ErrorResponse "Unauthorized - The user is not authenticated"
+// @Failure 409 {object} ErrorResponse "Conflict - The order number has already been uploaded by another user"
+// @Failure 422 {object} ErrorResponse "Unprocessable Entity - Incorrect order number format"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
+// @Security ApiKeyAuth
+// @Router /api/user/orders [post]
 func (oh *OrdersHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), oh.contextTimeout)
 	defer cancel()
@@ -76,6 +95,18 @@ func (oh *OrdersHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
+// GetOrders godoc
+// @Summary Getting a list of downloaded order numbers
+// @Description The handler returns a list of order numbers sorted by loading time from oldest to newest for an authorized user.
+// @Description The response includes the order number, status, accrual (if available), and the upload timestamp.
+// @Tags orders
+// @Produce json
+// @Success 200 {array} OrderDTO "List of orders with details"
+// @Success 204 "No orders to display"
+// @Failure 401 {object} ErrorResponse "Unauthorized - The user is not authorized"
+// @Failure 500 {object} ErrorResponse "Internal Server Error"
+// @Security ApiKeyAuth
+// @Router /api/user/orders [get]
 func (oh *OrdersHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), oh.contextTimeout)
 	defer cancel()
