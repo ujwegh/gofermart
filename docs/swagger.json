@@ -1,13 +1,12 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "This is a `gophermart` service. It allows users to create orders,",
-        "title": "Swagger Example API",
+        "description": "This is a `gophermart` service. It allows users to create orders, credit/debit their wallets and withdraw funds from their wallets using the accrual service.",
+        "title": "Swagger Docs for Gophermart API",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
-            "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
+            "name": "Nikita Aleksandrov",
+            "email": "nik29200018@gmail.com"
         },
         "license": {
             "name": "Apache 2.0",

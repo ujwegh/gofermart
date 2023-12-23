@@ -11,9 +11,8 @@ const docTemplate = `{
         "title": "{{.Title}}",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
-            "name": "API Support",
-            "url": "http://www.swagger.io/support",
-            "email": "support@swagger.io"
+            "name": "Nikita Aleksandrov",
+            "email": "nik29200018@gmail.com"
         },
         "license": {
             "name": "Apache 2.0",
@@ -486,8 +485,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "/api/user",
 	Schemes:          []string{},
-	Title:            "Swagger Example API",
-	Description:      "This is a `gophermart` service. It allows users to create orders,",
+	Title:            "Swagger Docs for Gophermart API",
+	Description:      "This is a `gophermart` service. It allows users to create orders, credit/debit their wallets and withdraw funds from their wallets using the accrual service.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
