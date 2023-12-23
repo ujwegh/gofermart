@@ -41,7 +41,8 @@ func (os *OrderServiceImpl) CreateOrder(ctx context.Context, orderID string, use
 	if order != nil && userUID.String() != order.UserUUID.String() {
 		msg := "order already created by another user"
 		return nil, appErrors.NewWithCode(errors.New(msg), msg, http.StatusConflict)
-	} else if order != nil && userUID.String() == order.UserUUID.String() {
+	}
+	if order != nil && userUID.String() == order.UserUUID.String() {
 		msg := "repeated order"
 		return nil, appErrors.New(errors.New(msg), msg)
 	}
