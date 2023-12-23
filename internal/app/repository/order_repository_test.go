@@ -7,7 +7,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/ujwegh/gophermart/internal/app/models"
 	"testing"
 	"time"
 )
@@ -83,15 +82,15 @@ func TestOrderRepositoryImpl_CreateOrder(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		order   *models.Order
+		order   *Order
 		wantErr bool
 	}{
 		{
 			name: "Successful Order Creation",
-			order: &models.Order{
+			order: &Order{
 				ID:        "order-uuid",
 				UserUUID:  uuid.New(),
-				Status:    models.NEW,
+				Status:    NEW,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
@@ -126,7 +125,7 @@ func TestOrderRepositoryImpl_GetOrderByID(t *testing.T) {
 
 	var acc = 10.0
 	// Insert a test order into the database for retrieval
-	testOrder := &models.Order{
+	testOrder := &Order{
 		ID:        "test-order-uuid",
 		UserUUID:  uuid.New(),
 		Status:    "NEW",
@@ -143,7 +142,7 @@ func TestOrderRepositoryImpl_GetOrderByID(t *testing.T) {
 	tests := []struct {
 		name    string
 		orderID string
-		want    *models.Order
+		want    *Order
 		wantErr bool
 	}{
 		{
@@ -183,7 +182,7 @@ func TestOrderRepositoryImpl_GetOrdersByUserUID(t *testing.T) {
 	newUserUUID := uuid.New()
 	var acc = 10.0
 	// Insert test orders for the user into the database
-	testOrders := []models.Order{
+	testOrders := []Order{
 		{
 			ID:        "order1",
 			UserUUID:  userUUID,
@@ -204,7 +203,7 @@ func TestOrderRepositoryImpl_GetOrdersByUserUID(t *testing.T) {
 	tests := []struct {
 		name     string
 		userUUID *uuid.UUID
-		want     *[]models.Order
+		want     *[]Order
 		wantErr  bool
 	}{
 		{
@@ -216,7 +215,7 @@ func TestOrderRepositoryImpl_GetOrdersByUserUID(t *testing.T) {
 		{
 			name:     "No Orders Found for User",
 			userUUID: &newUserUUID, // A new UUID that has no orders
-			want:     &[]models.Order{},
+			want:     &[]Order{},
 			wantErr:  false,
 		},
 	}
@@ -300,7 +299,7 @@ func TestOrderRepositoryImpl_UpdateOrder(t *testing.T) {
 	var newAcc = 20.0
 	var newDate = time.Date(2021, 1, 3, 0, 0, 0, 0, time.UTC)
 	// Insert a test order into the database for update
-	testOrder := &models.Order{
+	testOrder := &Order{
 		ID:        "order-uuid",
 		UserUUID:  uuid.New(),
 		Status:    "NEW",
@@ -315,12 +314,12 @@ func TestOrderRepositoryImpl_UpdateOrder(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		order   *models.Order
+		order   *Order
 		wantErr bool
 	}{
 		{
 			name: "Successful Order Update",
-			order: &models.Order{
+			order: &Order{
 				ID:        "order-uuid",
 				Status:    "UPDATED",
 				Accrual:   &newAcc,
@@ -345,7 +344,7 @@ func TestOrderRepositoryImpl_UpdateOrder(t *testing.T) {
 				assert.NoError(t, tx.Commit(), "Commit should succeed")
 
 				// Verify the order was updated correctly
-				var updatedOrder models.Order
+				var updatedOrder Order
 				err := db.Get(&updatedOrder, "SELECT * FROM orders WHERE id = ?", tt.order.ID)
 				require.NoError(t, err)
 				assert.Equal(t, tt.order.Status, updatedOrder.Status, "Order status should be updated")

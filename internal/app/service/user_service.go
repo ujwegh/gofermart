@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	appErrors "github.com/ujwegh/gophermart/internal/app/errors"
-	"github.com/ujwegh/gophermart/internal/app/models"
 	"github.com/ujwegh/gophermart/internal/app/repository"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -14,9 +13,9 @@ import (
 )
 
 type UserService interface {
-	Create(ctx context.Context, login, password string) (*models.User, error)
-	Authenticate(ctx context.Context, login, password string) (*models.User, error)
-	GetByUserLogin(ctx context.Context, login string) (*models.User, error)
+	Create(ctx context.Context, login, password string) (*repository.User, error)
+	Authenticate(ctx context.Context, login, password string) (*repository.User, error)
+	GetByUserLogin(ctx context.Context, login string) (*repository.User, error)
 }
 
 type UserServiceImpl struct {
@@ -31,7 +30,7 @@ func NewUserService(userRepo repository.UserRepository, walletService WalletServ
 	}
 }
 
-func (us *UserServiceImpl) Authenticate(ctx context.Context, login, password string) (*models.User, error) {
+func (us *UserServiceImpl) Authenticate(ctx context.Context, login, password string) (*repository.User, error) {
 	user, err := us.GetByUserLogin(ctx, login)
 	if err != nil {
 		return nil, err
@@ -43,7 +42,7 @@ func (us *UserServiceImpl) Authenticate(ctx context.Context, login, password str
 	return user, nil
 }
 
-func (us *UserServiceImpl) GetByUserLogin(ctx context.Context, login string) (*models.User, error) {
+func (us *UserServiceImpl) GetByUserLogin(ctx context.Context, login string) (*repository.User, error) {
 	user, err := us.userRepo.FindByLogin(ctx, login)
 	if err != nil {
 		appErr := &appErrors.ResponseCodeError{}
@@ -55,9 +54,9 @@ func (us *UserServiceImpl) GetByUserLogin(ctx context.Context, login string) (*m
 	return user, nil
 }
 
-func (us *UserServiceImpl) Create(ctx context.Context, login, password string) (*models.User, error) {
+func (us *UserServiceImpl) Create(ctx context.Context, login, password string) (*repository.User, error) {
 	passwordHash := generatePasswordHash(password)
-	user := &models.User{
+	user := &repository.User{
 		UUID:         uuid.New(),
 		Login:        login,
 		PasswordHash: passwordHash,

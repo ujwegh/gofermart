@@ -8,7 +8,7 @@ import (
 func TestTokenServiceImpl_GetUserLogin(t *testing.T) {
 	validSecretKey := "super-duper-secret"
 	differentSecretKey := "different-secret-key"
-	validTokenString := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnb3BoZXJtYXJ0Iiwic3ViIjoiYXV0aCB0b2tlbiIsImV4cCI6MTcwMzAxNDQ1OCwiaWF0IjoxNzAyOTI4MDU4LCJVc2VyTG9naW4iOiJkaW5DVkVkIn0.53PsjPTHMOjr1-dxyXJJIz_AtfcAmvvRrkf7zB7ASj4"
+	validTokenString := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnb3BoZXJtYXJ0Iiwic3ViIjoiYXV0aCB0b2tlbiIsImV4cCI6MTczNDg2MTE1NSwiaWF0IjoxNzAzMzI1MTU1LCJVc2VyTG9naW4iOiJkaW5DVkVkIn0.pGy52Pdxynv0c94ZnMKx5FvC_PvIJSjP92BJhB9NKFw"
 	invalidTokenString := "invalid-token"
 	emptyLoginTokenString := ""
 	expiredTokenString := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnb3BoZXJtYXJ0Iiwic3ViIjoiYXV0aCB0b2tlbiIsImV4cCI6MTcwMjkyODEzNywiaWF0IjoxNzAyOTI4MTM2LCJVc2VyTG9naW4iOiJkaW5DVkVkIn0.RgZNKAbl3y563RUWXy7ohAq2TIVTtbWhjyeEO2b2KPw"

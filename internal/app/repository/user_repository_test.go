@@ -6,7 +6,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/ujwegh/gophermart/internal/app/models"
 	"testing"
 	"time"
 )
@@ -41,12 +40,12 @@ func TestUserRepositoryImpl_Create(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		user    *models.User
+		user    *User
 		wantErr bool
 	}{
 		{
 			name: "Successful User Creation",
-			user: &models.User{
+			user: &User{
 				UUID:         uuid.New(),
 				Login:        "newuser",
 				PasswordHash: "hash",
@@ -56,7 +55,7 @@ func TestUserRepositoryImpl_Create(t *testing.T) {
 		},
 		{
 			name: "User Creation with Duplicate Login",
-			user: &models.User{
+			user: &User{
 				UUID:         uuid.New(),
 				Login:        "newuser", // Same login as above
 				PasswordHash: "hash",
@@ -88,7 +87,7 @@ func TestUserRepositoryImpl_FindByLogin(t *testing.T) {
 	defer db.Close()
 
 	// Insert a test user into the database
-	testUser := &models.User{
+	testUser := &User{
 		UUID:         uuid.New(),
 		Login:        "testuser",
 		PasswordHash: "hash",
@@ -103,7 +102,7 @@ func TestUserRepositoryImpl_FindByLogin(t *testing.T) {
 	tests := []struct {
 		name    string
 		login   string
-		want    *models.User
+		want    *User
 		wantErr bool
 	}{
 		{

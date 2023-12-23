@@ -6,25 +6,24 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	appErrors "github.com/ujwegh/gophermart/internal/app/errors"
-	"github.com/ujwegh/gophermart/internal/app/models"
 	"github.com/ujwegh/gophermart/internal/app/repository"
 	"net/http"
 	"time"
 )
 
 type OrderService interface {
-	CreateOrder(ctx context.Context, orderID string, userUID *uuid.UUID) (*models.Order, error)
-	GetOrderByID(ctx context.Context, orderID string) (*models.Order, error)
-	GetOrders(ctx context.Context, uid *uuid.UUID) (*[]models.Order, error)
+	CreateOrder(ctx context.Context, orderID string, userUID *uuid.UUID) (*repository.Order, error)
+	GetOrderByID(ctx context.Context, orderID string) (*repository.Order, error)
+	GetOrders(ctx context.Context, uid *uuid.UUID) (*[]repository.Order, error)
 }
 
 type OrderServiceImpl struct {
 	orderRepo     repository.OrderRepository
 	walletService WalletService
-	orderChan     chan models.Order
+	orderChan     chan repository.Order
 }
 
-func NewOrderService(orderRepo repository.OrderRepository, walletService WalletService, processOrderChan chan models.Order) *OrderServiceImpl {
+func NewOrderService(orderRepo repository.OrderRepository, walletService WalletService, processOrderChan chan repository.Order) *OrderServiceImpl {
 	return &OrderServiceImpl{
 		orderRepo:     orderRepo,
 		walletService: walletService,
@@ -32,7 +31,7 @@ func NewOrderService(orderRepo repository.OrderRepository, walletService WalletS
 	}
 }
 
-func (os *OrderServiceImpl) CreateOrder(ctx context.Context, orderID string, userUID *uuid.UUID) (*models.Order, error) {
+func (os *OrderServiceImpl) CreateOrder(ctx context.Context, orderID string, userUID *uuid.UUID) (*repository.Order, error) {
 	order, err := os.GetOrderByID(ctx, orderID)
 	appErr := &appErrors.ResponseCodeError{}
 	if err != nil && !errors.As(err, appErr) {
@@ -48,10 +47,10 @@ func (os *OrderServiceImpl) CreateOrder(ctx context.Context, orderID string, use
 	}
 
 	now := time.Now()
-	newOrder := &models.Order{
+	newOrder := &repository.Order{
 		ID:        orderID,
 		UserUUID:  *userUID,
-		Status:    models.NEW,
+		Status:    repository.NEW,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -63,11 +62,11 @@ func (os *OrderServiceImpl) CreateOrder(ctx context.Context, orderID string, use
 	return newOrder, nil
 }
 
-func (os *OrderServiceImpl) GetOrderByID(ctx context.Context, orderID string) (*models.Order, error) {
+func (os *OrderServiceImpl) GetOrderByID(ctx context.Context, orderID string) (*repository.Order, error) {
 	return os.orderRepo.GetOrderByID(ctx, orderID)
 }
 
-func (os *OrderServiceImpl) GetOrders(ctx context.Context, uid *uuid.UUID) (*[]models.Order, error) {
+func (os *OrderServiceImpl) GetOrders(ctx context.Context, uid *uuid.UUID) (*[]repository.Order, error) {
 	orders, err := os.orderRepo.GetOrdersByUserUID(ctx, uid)
 	if err != nil {
 		return nil, err

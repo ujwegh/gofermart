@@ -5,30 +5,38 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 	appErrors "github.com/ujwegh/gophermart/internal/app/errors"
-	"github.com/ujwegh/gophermart/internal/app/models"
+	"time"
 )
 
-type UserRepository interface {
-	Create(ctx context.Context, tx *sqlx.Tx, user *models.User) error
-	FindByLogin(ctx context.Context, login string) (*models.User, error)
-	GetDB() *sqlx.DB
-}
-
-type UserRepositoryImpl struct {
-	db *sqlx.DB
-}
+type (
+	User struct {
+		UUID         uuid.UUID `db:"uuid"`
+		Login        string    `db:"login"`
+		PasswordHash string    `db:"password_hash"`
+		CreatedAt    time.Time `db:"created_at"`
+	}
+	UserRepository interface {
+		Create(ctx context.Context, tx *sqlx.Tx, user *User) error
+		FindByLogin(ctx context.Context, login string) (*User, error)
+		GetDB() *sqlx.DB
+	}
+	UserRepositoryImpl struct {
+		db *sqlx.DB
+	}
+)
 
 func NewUserRepository(db *sqlx.DB) *UserRepositoryImpl {
 	return &UserRepositoryImpl{db: db}
 }
 
-func (ur *UserRepositoryImpl) FindByLogin(ctx context.Context, login string) (*models.User, error) {
+func (ur *UserRepositoryImpl) FindByLogin(ctx context.Context, login string) (*User, error) {
 	query := `SELECT * FROM users WHERE login = $1;`
-	user := models.User{}
+	user := User{}
 	err := ur.db.GetContext(ctx, &user, query, login)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -39,7 +47,7 @@ func (ur *UserRepositoryImpl) FindByLogin(ctx context.Context, login string) (*m
 	return &user, nil
 }
 
-func (ur *UserRepositoryImpl) Create(ctx context.Context, tx *sqlx.Tx, user *models.User) error {
+func (ur *UserRepositoryImpl) Create(ctx context.Context, tx *sqlx.Tx, user *User) error {
 	query := `INSERT INTO users (uuid, login, password_hash, created_at) VALUES ($1, $2, $3, $4);`
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {

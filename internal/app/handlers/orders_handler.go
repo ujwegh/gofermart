@@ -7,7 +7,7 @@ import (
 	"github.com/ShiraazMoollatjie/goluhn"
 	appContext "github.com/ujwegh/gophermart/internal/app/context"
 	appErrors "github.com/ujwegh/gophermart/internal/app/errors"
-	"github.com/ujwegh/gophermart/internal/app/models"
+	"github.com/ujwegh/gophermart/internal/app/repository"
 	"github.com/ujwegh/gophermart/internal/app/service"
 	"io"
 	"net/http"
@@ -139,7 +139,7 @@ func (oh *OrdersHandler) GetOrders(w http.ResponseWriter, r *http.Request) {
 	w.Write(rawBytes)
 }
 
-func (oh *OrdersHandler) mapOrdersToOrderDtoSlice(slice *[]models.Order) OrderDTOSlice {
+func (oh *OrdersHandler) mapOrdersToOrderDtoSlice(slice *[]repository.Order) OrderDTOSlice {
 	var responseSlice []OrderDTO
 	for _, item := range *slice {
 		responseItem := OrderDTO{

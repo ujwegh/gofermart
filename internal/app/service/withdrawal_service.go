@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	appErrors "github.com/ujwegh/gophermart/internal/app/errors"
-	"github.com/ujwegh/gophermart/internal/app/models"
 	"github.com/ujwegh/gophermart/internal/app/repository"
 	"net/http"
 	"time"
@@ -14,7 +13,7 @@ import (
 
 type WithdrawalService interface {
 	CreateWithdrawal(ctx context.Context, userUID *uuid.UUID, orderID string, amount float64) error
-	GetWithdrawals(ctx context.Context, userUID *uuid.UUID) (*[]models.Withdrawal, error)
+	GetWithdrawals(ctx context.Context, userUID *uuid.UUID) (*[]repository.Withdrawal, error)
 }
 
 type WithdrawalServiceImpl struct {
@@ -30,7 +29,7 @@ func NewWithdrawalService(withdrawalRepo repository.WithdrawalsRepository, walle
 }
 
 func (bs *WithdrawalServiceImpl) CreateWithdrawal(ctx context.Context, userUID *uuid.UUID, orderID string, amount float64) error {
-	withdrawal := models.Withdrawal{
+	withdrawal := repository.Withdrawal{
 		UserUUID:  *userUID,
 		OrderID:   orderID,
 		Amount:    amount,
@@ -58,6 +57,6 @@ func (bs *WithdrawalServiceImpl) CreateWithdrawal(ctx context.Context, userUID *
 	return tx.Commit()
 }
 
-func (bs *WithdrawalServiceImpl) GetWithdrawals(ctx context.Context, userUID *uuid.UUID) (*[]models.Withdrawal, error) {
+func (bs *WithdrawalServiceImpl) GetWithdrawals(ctx context.Context, userUID *uuid.UUID) (*[]repository.Withdrawal, error) {
 	return bs.withdrawalRepo.GetWithdrawals(ctx, userUID)
 }

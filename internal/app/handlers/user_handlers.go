@@ -5,7 +5,7 @@ import (
 	"fmt"
 	appContext "github.com/ujwegh/gophermart/internal/app/context"
 	appErrors "github.com/ujwegh/gophermart/internal/app/errors"
-	"github.com/ujwegh/gophermart/internal/app/models"
+	"github.com/ujwegh/gophermart/internal/app/repository"
 	"github.com/ujwegh/gophermart/internal/app/service"
 	"io"
 	"net/http"
@@ -159,7 +159,7 @@ func (uh *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", bearerToken)
 }
 
-func (uh *UserHandler) generateToken(user *models.User) (string, error) {
+func (uh *UserHandler) generateToken(user *repository.User) (string, error) {
 	token, err := uh.tokenService.GenerateToken(user.Login)
 	if err != nil {
 		return "", appErrors.NewWithCode(err, "Unable to generate token", http.StatusInternalServerError)

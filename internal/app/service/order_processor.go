@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/ujwegh/gophermart/internal/app/logger"
-	"github.com/ujwegh/gophermart/internal/app/models"
 	"github.com/ujwegh/gophermart/internal/app/repository"
 	"github.com/ujwegh/gophermart/internal/app/service/clients"
 	"go.uber.org/zap"
@@ -12,7 +11,7 @@ import (
 )
 
 type OrderProcessor interface {
-	ProcessOrder(order *models.Order) error
+	ProcessOrder(order *repository.Order) error
 }
 
 type OrderProcessorImpl struct {
@@ -20,14 +19,14 @@ type OrderProcessorImpl struct {
 	orderCache       OrderCache
 	walletService    WalletService
 	accrualClient    clients.AccrualClient
-	processOrderChan chan models.Order
+	processOrderChan chan repository.Order
 }
 
 func NewOrderProcessor(orderRepo repository.OrderRepository,
 	orderCache OrderCache,
 	walletService WalletService,
 	accrualClient clients.AccrualClient,
-	processOrderChan chan models.Order) *OrderProcessorImpl {
+	processOrderChan chan repository.Order) *OrderProcessorImpl {
 	o := &OrderProcessorImpl{
 		orderRepo:        orderRepo,
 		orderCache:       orderCache,
@@ -90,7 +89,7 @@ func (op *OrderProcessorImpl) ProcessOrders(ctx context.Context) {
 	}
 }
 
-func (op *OrderProcessorImpl) updateOrder(order *models.Order) error {
+func (op *OrderProcessorImpl) updateOrder(order *repository.Order) error {
 	ctx := context.Background()
 
 	db := op.orderRepo.GetDB()
@@ -122,16 +121,16 @@ func (op *OrderProcessorImpl) updateOrder(order *models.Order) error {
 	return nil
 }
 
-func mapAccrualResponseStatus(accrualResponse *clients.AccrualResponseDto) models.Status {
+func mapAccrualResponseStatus(accrualResponse *clients.AccrualResponseDto) repository.Status {
 	switch accrualResponse.AccrualStatus {
 	case clients.PROCESSING:
-		return models.PROCESSING
+		return repository.PROCESSING
 	case clients.REGISTERED:
-		return models.NEW
+		return repository.NEW
 	case clients.INVALID:
-		return models.INVALID
+		return repository.INVALID
 	case clients.PROCESSED:
-		return models.PROCESSED
+		return repository.PROCESSED
 	}
-	return models.INVALID
+	return repository.INVALID
 }

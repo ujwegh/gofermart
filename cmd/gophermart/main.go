@@ -2,13 +2,11 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/ujwegh/gophermart/internal/app/config"
 	"github.com/ujwegh/gophermart/internal/app/handlers"
 	"github.com/ujwegh/gophermart/internal/app/logger"
 	middlware "github.com/ujwegh/gophermart/internal/app/middleware"
-	"github.com/ujwegh/gophermart/internal/app/models"
 	"github.com/ujwegh/gophermart/internal/app/repository"
 	"github.com/ujwegh/gophermart/internal/app/router"
 	"github.com/ujwegh/gophermart/internal/app/service"
@@ -43,13 +41,11 @@ import (
 // @externalDocs.description  OpenAPI
 // @externalDocs.url          https://swagger.io/resources/open-api/
 func main() {
-	// Server run context
 	serverCtx, serverStopCtx := context.WithCancel(context.Background())
 
 	c := config.ParseFlags()
 	logger.InitLogger(c.LogLevel)
 
-	//setup repositories
 	ts := service.NewTokenService(c)
 	s := repository.NewDBStorage(c)
 	ur := repository.NewUserRepository(s.DBConn)
@@ -57,8 +53,8 @@ func main() {
 	wr := repository.NewWalletRepository(s.DBConn)
 	wlr := repository.NewWithdrawalsRepository(s.DBConn)
 
-	processOrderChannel := make(chan models.Order, 100)
-	//setup services
+	processOrderChannel := make(chan repository.Order, 100)
+
 	ws := service.NewWalletService(wr)
 	ors := service.NewOrderService(or, ws, processOrderChannel)
 	oc := service.NewOrderCache(10*time.Second, 5*time.Minute, processOrderChannel)
@@ -66,7 +62,6 @@ func main() {
 	wls := service.NewWithdrawalService(wlr, ws)
 	us := service.NewUserService(ur, ws)
 
-	// setup handlers
 	uh := handlers.NewUserHandler(us, ts, c.TokenLifetimeSec)
 	oh := handlers.NewOrdersHandler(c.ContextTimeoutSec, ors)
 	bh := handlers.NewBalanceHandler(c.ContextTimeoutSec, ws, wls)
@@ -75,44 +70,37 @@ func main() {
 
 	r := router.NewAppRouter(c.ServerAddr, uh, oh, bh, am)
 
-	// Start the goroutine
 	op := service.NewOrderProcessor(or, oc, ws, ac, processOrderChannel)
 	go op.ProcessOrders(serverCtx)
 
-	// The HTTP Server
 	server := &http.Server{Addr: c.ServerAddr, Handler: r}
 
-	// Listen for syscall signals for process to interrupt/quit
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	serverErrors := make(chan error, 1)
 	go func() {
-		<-sig
-
-		// Shutdown signal with grace period of 30 seconds
-		shutdownCtx, cancelFunc := context.WithTimeout(serverCtx, 30*time.Second)
-		cancelFunc()
-		close(processOrderChannel)
-		go func() {
-			<-shutdownCtx.Done()
-			if shutdownCtx.Err() == context.DeadlineExceeded {
-				log.Fatal("graceful shutdown timed out.. forcing exit.")
-			}
-		}()
-
-		// Trigger graceful shutdown
-		err := server.Shutdown(shutdownCtx)
-		if err != nil {
-			log.Fatal(err)
-		}
-		serverStopCtx()
+		fmt.Printf("Starting server on port %s...\n", strings.Split(c.ServerAddr, ":")[1])
+		serverErrors <- server.ListenAndServe()
 	}()
 
-	// Run the server
-	fmt.Printf("Starting server on port %s...\n", strings.Split(c.ServerAddr, ":")[1])
-	err := server.ListenAndServe()
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatal(err)
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	select {
+	case sig := <-shutdown:
+		log.Printf("Start shutdown %v", sig)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		err := server.Shutdown(ctx)
+		if err != nil {
+			log.Fatalf("graceful shutdown did not complete in 30s: %v", err)
+		}
+		close(processOrderChannel)
+
+	case err := <-serverErrors:
+		log.Fatalf("error: listening and serving: %v", err)
 	}
-	// Wait for server context to be stopped
-	<-serverCtx.Done()
+
+	serverStopCtx()
+	log.Println("finished shutting down server")
 }

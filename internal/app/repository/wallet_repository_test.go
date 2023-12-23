@@ -7,7 +7,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/ujwegh/gophermart/internal/app/models"
 	"testing"
 	"time"
 )
@@ -46,12 +45,12 @@ func TestWalletRepositoryImpl_CreateWallet(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		wallet  *models.Wallet
+		wallet  *Wallet
 		wantErr bool
 	}{
 		{
 			name: "Successful Wallet Creation",
-			wallet: &models.Wallet{
+			wallet: &Wallet{
 				UserUUID:  uuid.New(),
 				Credits:   0,
 				Debits:    0,
@@ -75,7 +74,7 @@ func TestWalletRepositoryImpl_CreateWallet(t *testing.T) {
 				assert.NoError(t, err, "CreateWallet should not fail")
 				assert.NoError(t, tx.Commit(), "Commit should succeed")
 				// Verify the wallet record is correctly inserted into the database
-				var retrievedWallet models.Wallet
+				var retrievedWallet Wallet
 				err := db.Get(&retrievedWallet, "SELECT * FROM wallets WHERE user_uuid = ?", tt.wallet.UserUUID)
 				require.NoError(t, err)
 				assert.Equal(t, tt.wallet.Credits, retrievedWallet.Credits, "Credits should match")
@@ -149,7 +148,7 @@ func TestWalletRepositoryImpl_Credit(t *testing.T) {
 				assert.NoError(t, tx.Rollback(), "Rollback should succeed")
 				if tt.shouldCheckWallet {
 					// Verify the wallet record is unchanged
-					var wallet models.Wallet
+					var wallet Wallet
 					err := db.Get(&wallet, "SELECT * FROM wallets WHERE user_uuid = ?", tt.userUUID.String())
 					require.NoError(t, err)
 					assert.Equal(t, initialCredits+creditAmount, wallet.Credits, "Credits should remain unchanged after rollback")
@@ -228,7 +227,7 @@ func TestWalletRepositoryImpl_Debit(t *testing.T) {
 
 				if tt.shouldCheckWallet {
 					// Verify the wallet record is unchanged
-					var wallet models.Wallet
+					var wallet Wallet
 					err := db.Get(&wallet, "SELECT * FROM wallets WHERE user_uuid = ?", tt.userUUID.String())
 					require.NoError(t, err)
 					assert.Equal(t, initialDebits+debitAmount, wallet.Debits, "Debits should remain unchanged after rollback")
@@ -249,7 +248,7 @@ func TestWalletRepositoryImpl_GetWallet(t *testing.T) {
 	// Insert a test wallet into the database
 	userUUID := uuid.New()
 	newUserUUID := uuid.New()
-	testWallet := &models.Wallet{
+	testWallet := &Wallet{
 		UserUUID:  userUUID,
 		Credits:   100.0,
 		Debits:    0.0,
@@ -265,7 +264,7 @@ func TestWalletRepositoryImpl_GetWallet(t *testing.T) {
 	tests := []struct {
 		name     string
 		userUUID *uuid.UUID
-		want     *models.Wallet
+		want     *Wallet
 		wantErr  bool
 	}{
 		{

@@ -6,7 +6,7 @@ import (
 	"github.com/ShiraazMoollatjie/goluhn"
 	appContext "github.com/ujwegh/gophermart/internal/app/context"
 	appErrors "github.com/ujwegh/gophermart/internal/app/errors"
-	"github.com/ujwegh/gophermart/internal/app/models"
+	"github.com/ujwegh/gophermart/internal/app/repository"
 	"github.com/ujwegh/gophermart/internal/app/service"
 	"io"
 	"net/http"
@@ -192,7 +192,7 @@ func (bh *BalanceHandler) GetWithdrawals(w http.ResponseWriter, r *http.Request)
 
 }
 
-func (bh *BalanceHandler) mapWithdrawalsToWithdrawalDtoSlice(slice *[]models.Withdrawal) WithdrawalDtoSlice {
+func (bh *BalanceHandler) mapWithdrawalsToWithdrawalDtoSlice(slice *[]repository.Withdrawal) WithdrawalDtoSlice {
 	var responseSlice []WithdrawalDTO
 	for _, item := range *slice {
 		responseItem := WithdrawalDTO{

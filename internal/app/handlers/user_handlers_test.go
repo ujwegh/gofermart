@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	appErrors "github.com/ujwegh/gophermart/internal/app/errors"
-	"github.com/ujwegh/gophermart/internal/app/models"
+	"github.com/ujwegh/gophermart/internal/app/repository"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -22,19 +22,19 @@ type MockTokenService struct {
 	mock.Mock
 }
 
-func (m *MockUserService) Create(ctx context.Context, login, password string) (*models.User, error) {
+func (m *MockUserService) Create(ctx context.Context, login, password string) (*repository.User, error) {
 	args := m.Called(ctx, login, password)
-	return args.Get(0).(*models.User), args.Error(1)
+	return args.Get(0).(*repository.User), args.Error(1)
 }
 
-func (m *MockUserService) GetByUserLogin(ctx context.Context, login string) (*models.User, error) {
+func (m *MockUserService) GetByUserLogin(ctx context.Context, login string) (*repository.User, error) {
 	args := m.Called(ctx, login)
-	return args.Get(0).(*models.User), args.Error(1)
+	return args.Get(0).(*repository.User), args.Error(1)
 }
 
-func (m *MockUserService) Authenticate(ctx context.Context, login, password string) (*models.User, error) {
+func (m *MockUserService) Authenticate(ctx context.Context, login, password string) (*repository.User, error) {
 	args := m.Called(ctx, login, password)
-	return args.Get(0).(*models.User), args.Error(1)
+	return args.Get(0).(*repository.User), args.Error(1)
 }
 
 func (m *MockTokenService) GetUserLogin(tokenString string) (string, error) {
@@ -63,7 +63,7 @@ func TestUserHandler_Login(t *testing.T) {
 			request: `{"login":"testuser","password":"password"}`,
 			mockUserService: func() *MockUserService {
 				m := &MockUserService{}
-				user := &models.User{
+				user := &repository.User{
 					UUID:         uuid.New(),
 					Login:        "testuser",
 					PasswordHash: "passwordhash",
@@ -88,7 +88,7 @@ func TestUserHandler_Login(t *testing.T) {
 			mockUserService: func() *MockUserService {
 				m := &MockUserService{}
 				err := appErrors.NewWithCode(errors.New(""), "Invalid password", http.StatusUnauthorized)
-				m.On("Authenticate", mock.Anything, "testuser", "password").Return((*models.User)(nil), err)
+				m.On("Authenticate", mock.Anything, "testuser", "password").Return((*repository.User)(nil), err)
 				return m
 			},
 			mockTokenService: func() *MockTokenService {
@@ -120,7 +120,7 @@ func TestUserHandler_Login(t *testing.T) {
 			request: `{"login":"testuser","password":"password"}`,
 			mockUserService: func() *MockUserService {
 				m := &MockUserService{}
-				user := &models.User{
+				user := &repository.User{
 					UUID:         uuid.New(),
 					Login:        "testuser",
 					PasswordHash: "passwordhash",
@@ -144,7 +144,7 @@ func TestUserHandler_Login(t *testing.T) {
 			request: `{"login":"testuser","password":"password"}`,
 			mockUserService: func() *MockUserService {
 				m := &MockUserService{}
-				user := &models.User{
+				user := &repository.User{
 					UUID:         uuid.New(),
 					Login:        "testuser",
 					PasswordHash: "passwordhash",
@@ -225,7 +225,7 @@ func TestUserHandler_Register(t *testing.T) {
 			request: `{"login":"newuser","password":"newpassword"}`,
 			mockUserService: func() *MockUserService {
 				m := &MockUserService{}
-				user := &models.User{
+				user := &repository.User{
 					UUID:         uuid.New(),
 					Login:        "newuser",
 					PasswordHash: "passwordhash",
@@ -248,7 +248,7 @@ func TestUserHandler_Register(t *testing.T) {
 			request: `{"login":"","password":"newpassword"}`,
 			mockUserService: func() *MockUserService {
 				m := &MockUserService{}
-				user := &models.User{UUID: uuid.New(), Login: "newuser", PasswordHash: "passwordhash", CreatedAt: time.Now()}
+				user := &repository.User{UUID: uuid.New(), Login: "newuser", PasswordHash: "passwordhash", CreatedAt: time.Now()}
 				m.On("Create", mock.Anything, "newuser", "newpassword").Return(user, nil)
 				return m
 			},
@@ -268,7 +268,7 @@ func TestUserHandler_Register(t *testing.T) {
 			mockUserService: func() *MockUserService {
 				m := &MockUserService{}
 				err := appErrors.New(errors.New(""), "User already exists")
-				m.On("Create", mock.Anything, "newuser", "newpassword").Return((*models.User)(nil), err)
+				m.On("Create", mock.Anything, "newuser", "newpassword").Return((*repository.User)(nil), err)
 				return m
 			},
 			mockTokenService: func() *MockTokenService {
@@ -284,7 +284,7 @@ func TestUserHandler_Register(t *testing.T) {
 			request: `{"login":"newuser","password":"newpassword"}`,
 			mockUserService: func() *MockUserService {
 				m := &MockUserService{}
-				user := &models.User{UUID: uuid.New(), Login: "newuser", PasswordHash: "passwordhash", CreatedAt: time.Now()}
+				user := &repository.User{UUID: uuid.New(), Login: "newuser", PasswordHash: "passwordhash", CreatedAt: time.Now()}
 				m.On("Create", mock.Anything, "newuser", "newpassword").Return(user, nil)
 				return m
 			},
@@ -303,7 +303,7 @@ func TestUserHandler_Register(t *testing.T) {
 			request: `{"login":"newuser","password":"newpassword"}`,
 			mockUserService: func() *MockUserService {
 				m := &MockUserService{}
-				user := &models.User{UUID: uuid.New(), Login: "newuser", PasswordHash: "passwordhash", CreatedAt: time.Now()}
+				user := &repository.User{UUID: uuid.New(), Login: "newuser", PasswordHash: "passwordhash", CreatedAt: time.Now()}
 				m.On("Create", mock.Anything, "newuser", "newpassword").Return(user, nil)
 				return m
 			},

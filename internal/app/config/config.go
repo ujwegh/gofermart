@@ -22,7 +22,7 @@ func ParseFlags() AppConfig {
 	const (
 		defaultServerAddress               = "localhost:8080"
 		defaultLogLevel                    = "info"
-		defaultDatabaseURI                 = "postgres://postgres:mysecretpassword@localhost:5432/postgres" //postgres://postgres:mysecretpassword@localhost:5432/postgres
+		defaultDatabaseURI                 = "" //postgres://postgres:mysecretpassword@localhost:5432/postgres
 		defaultContextTimeoutSec           = 20
 		defaultTokenLifetimeSec            = 60 * 60 * 24 // 1 day
 		defaultTokenSecret                 = "super-duper-secret"

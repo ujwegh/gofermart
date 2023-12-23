@@ -8,7 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	appContext "github.com/ujwegh/gophermart/internal/app/context"
-	"github.com/ujwegh/gophermart/internal/app/models"
+	"github.com/ujwegh/gophermart/internal/app/repository"
+	"github.com/ujwegh/gophermart/internal/app/service"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -29,24 +30,24 @@ func (m *MockWalletService) CreateWallet(ctx context.Context, tx *sqlx.Tx, userU
 	return args.Error(1)
 }
 
-func (m *MockWalletService) GetWallet(ctx context.Context, userUID *uuid.UUID) (*models.Wallet, error) {
+func (m *MockWalletService) GetWallet(ctx context.Context, userUID *uuid.UUID) (*repository.Wallet, error) {
 	args := m.Called(ctx, userUID)
-	return args.Get(0).(*models.Wallet), args.Error(1)
+	return args.Get(0).(*repository.Wallet), args.Error(1)
 }
 
-func (m *MockWalletService) Credit(ctx context.Context, tx *sqlx.Tx, userUID *uuid.UUID, amount float64) (*models.Wallet, error) {
+func (m *MockWalletService) Credit(ctx context.Context, tx *sqlx.Tx, userUID *uuid.UUID, amount float64) (*repository.Wallet, error) {
 	args := m.Called(ctx, tx, userUID, amount)
-	return args.Get(0).(*models.Wallet), args.Error(1)
+	return args.Get(0).(*repository.Wallet), args.Error(1)
 }
 
-func (m *MockWalletService) Debit(ctx context.Context, tx *sqlx.Tx, userUID *uuid.UUID, amount float64) (*models.Wallet, error) {
+func (m *MockWalletService) Debit(ctx context.Context, tx *sqlx.Tx, userUID *uuid.UUID, amount float64) (*repository.Wallet, error) {
 	args := m.Called(ctx, tx, userUID, amount)
-	return args.Get(0).(*models.Wallet), args.Error(1)
+	return args.Get(0).(*repository.Wallet), args.Error(1)
 }
 
-func (m *MockWalletService) GetBalance(ctx context.Context, userUID *uuid.UUID) (*models.UserBalance, error) {
+func (m *MockWalletService) GetBalance(ctx context.Context, userUID *uuid.UUID) (*service.UserBalance, error) {
 	args := m.Called(ctx, userUID)
-	return args.Get(0).(*models.UserBalance), args.Error(1)
+	return args.Get(0).(*service.UserBalance), args.Error(1)
 }
 
 func (m *MockWithdrawalService) CreateWithdrawal(ctx context.Context, userUID *uuid.UUID, order string, sum float64) error {
@@ -54,9 +55,9 @@ func (m *MockWithdrawalService) CreateWithdrawal(ctx context.Context, userUID *u
 	return args.Error(0)
 }
 
-func (m *MockWithdrawalService) GetWithdrawals(ctx context.Context, userUID *uuid.UUID) (*[]models.Withdrawal, error) {
+func (m *MockWithdrawalService) GetWithdrawals(ctx context.Context, userUID *uuid.UUID) (*[]repository.Withdrawal, error) {
 	args := m.Called(ctx, userUID)
-	return args.Get(0).(*[]models.Withdrawal), args.Error(1)
+	return args.Get(0).(*[]repository.Withdrawal), args.Error(1)
 }
 
 func TestBalanceHandler_GetBalance(t *testing.T) {
@@ -74,7 +75,7 @@ func TestBalanceHandler_GetBalance(t *testing.T) {
 			name: "Successful Balance Retrieval",
 			mockWalletService: func() *MockWalletService {
 				m := &MockWalletService{}
-				balance := &models.UserBalance{CurrentBalance: 100.0, WithdrawnBalance: 50.0}
+				balance := &service.UserBalance{CurrentBalance: 100.0, WithdrawnBalance: 50.0}
 				m.On("GetBalance", mock.Anything, mock.Anything).Return(balance, nil)
 				return m
 			},
@@ -89,7 +90,7 @@ func TestBalanceHandler_GetBalance(t *testing.T) {
 			mockWalletService: func() *MockWalletService {
 				m := &MockWalletService{}
 				err := errors.New("internal server error")
-				m.On("GetBalance", mock.Anything, mock.Anything).Return((*models.UserBalance)(nil), err)
+				m.On("GetBalance", mock.Anything, mock.Anything).Return((*service.UserBalance)(nil), err)
 				return m
 			},
 			contextTimeout:   5 * time.Second,
@@ -102,7 +103,7 @@ func TestBalanceHandler_GetBalance(t *testing.T) {
 			name: "Context Timeout",
 			mockWalletService: func() *MockWalletService {
 				m := &MockWalletService{}
-				balance := &models.UserBalance{CurrentBalance: 100.0, WithdrawnBalance: 50.0}
+				balance := &service.UserBalance{CurrentBalance: 100.0, WithdrawnBalance: 50.0}
 				m.On("GetBalance", mock.Anything, mock.Anything).Return(balance, nil)
 				return m
 			},
@@ -158,7 +159,7 @@ func TestBalanceHandler_GetWithdrawals(t *testing.T) {
 			name: "Successful Withdrawal Retrieval",
 			mockWithdrawalService: func() *MockWithdrawalService {
 				m := &MockWithdrawalService{}
-				withdrawals := &[]models.Withdrawal{
+				withdrawals := &[]repository.Withdrawal{
 					{OrderID: "order1", Amount: 100.0, CreatedAt: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)},
 					{OrderID: "order2", Amount: 200.0, CreatedAt: time.Date(2021, 1, 2, 0, 0, 0, 0, time.UTC)},
 				}
@@ -178,7 +179,7 @@ func TestBalanceHandler_GetWithdrawals(t *testing.T) {
 			name: "No Withdrawals Found",
 			mockWithdrawalService: func() *MockWithdrawalService {
 				m := &MockWithdrawalService{}
-				m.On("GetWithdrawals", mock.Anything, mock.Anything).Return(&[]models.Withdrawal{}, nil)
+				m.On("GetWithdrawals", mock.Anything, mock.Anything).Return(&[]repository.Withdrawal{}, nil)
 				return m
 			},
 			contextTimeout:   5 * time.Second,
@@ -192,7 +193,7 @@ func TestBalanceHandler_GetWithdrawals(t *testing.T) {
 			mockWithdrawalService: func() *MockWithdrawalService {
 				m := &MockWithdrawalService{}
 				err := errors.New("internal server error")
-				m.On("GetWithdrawals", mock.Anything, mock.Anything).Return((*[]models.Withdrawal)(nil), err)
+				m.On("GetWithdrawals", mock.Anything, mock.Anything).Return((*[]repository.Withdrawal)(nil), err)
 				return m
 			},
 			contextTimeout:   5 * time.Second,
@@ -205,7 +206,7 @@ func TestBalanceHandler_GetWithdrawals(t *testing.T) {
 			name: "Context Timeout",
 			mockWithdrawalService: func() *MockWithdrawalService {
 				m := &MockWithdrawalService{}
-				withdrawals := &[]models.Withdrawal{
+				withdrawals := &[]repository.Withdrawal{
 					{OrderID: "order1", Amount: 100.0, CreatedAt: time.Now()},
 				}
 				m.On("GetWithdrawals", mock.Anything, mock.Anything).Return(withdrawals, nil)

@@ -7,7 +7,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/ujwegh/gophermart/internal/app/models"
 	"testing"
 	"time"
 )
@@ -44,12 +43,12 @@ func TestWithdrawalsRepositoryImpl_CreateWithdrawal(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		withdrawal *models.Withdrawal
+		withdrawal *Withdrawal
 		wantErr    bool
 	}{
 		{
 			name: "Successful Withdrawal Creation",
-			withdrawal: &models.Withdrawal{
+			withdrawal: &Withdrawal{
 				UserUUID:  uuid.New(),
 				OrderID:   "order123",
 				Amount:    100.0,
@@ -59,7 +58,7 @@ func TestWithdrawalsRepositoryImpl_CreateWithdrawal(t *testing.T) {
 		},
 		{
 			name: "Invalid Withdrawal Amount (Negative)",
-			withdrawal: &models.Withdrawal{
+			withdrawal: &Withdrawal{
 				UserUUID:  uuid.New(),
 				OrderID:   "order124",
 				Amount:    -50.0, // Negative amount, violating the check constraint

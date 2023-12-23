@@ -6,7 +6,6 @@ import (
 	_ "github.com/ujwegh/gophermart/docs"
 	"github.com/ujwegh/gophermart/internal/app/handlers"
 	middlware "github.com/ujwegh/gophermart/internal/app/middleware"
-	"net/http"
 )
 
 func NewAppRouter(serverAddress string,
@@ -16,7 +15,7 @@ func NewAppRouter(serverAddress string,
 	am middlware.AuthMiddleware) *chi.Mux {
 	r := chi.NewRouter()
 
-	r.Use(setupCORS())
+	r.Use(middlware.SetupCORS())
 	r.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("http://"+serverAddress+"/swagger/doc.json"),
 	))
@@ -38,21 +37,4 @@ func NewAppRouter(serverAddress string,
 	})
 
 	return r
-}
-
-func setupCORS() func(http.Handler) http.Handler {
-	return func(h http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-
-			if r.Method == "OPTIONS" {
-				w.WriteHeader(http.StatusOK)
-				return
-			}
-
-			h.ServeHTTP(w, r)
-		})
-	}
 }

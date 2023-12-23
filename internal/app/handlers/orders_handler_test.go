@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	appContext "github.com/ujwegh/gophermart/internal/app/context"
 	appErrors "github.com/ujwegh/gophermart/internal/app/errors"
-	"github.com/ujwegh/gophermart/internal/app/models"
+	"github.com/ujwegh/gophermart/internal/app/repository"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -20,19 +20,19 @@ type MockOrderService struct {
 	mock.Mock
 }
 
-func (m *MockOrderService) CreateOrder(ctx context.Context, orderID string, userUID *uuid.UUID) (*models.Order, error) {
+func (m *MockOrderService) CreateOrder(ctx context.Context, orderID string, userUID *uuid.UUID) (*repository.Order, error) {
 	args := m.Called(ctx, orderID, userUID)
-	return args.Get(0).(*models.Order), args.Error(1)
+	return args.Get(0).(*repository.Order), args.Error(1)
 }
 
-func (m *MockOrderService) GetOrderByID(ctx context.Context, orderID string) (*models.Order, error) {
+func (m *MockOrderService) GetOrderByID(ctx context.Context, orderID string) (*repository.Order, error) {
 	args := m.Called(ctx, orderID)
-	return args.Get(0).(*models.Order), args.Error(1)
+	return args.Get(0).(*repository.Order), args.Error(1)
 }
 
-func (m *MockOrderService) GetOrders(ctx context.Context, uid *uuid.UUID) (*[]models.Order, error) {
+func (m *MockOrderService) GetOrders(ctx context.Context, uid *uuid.UUID) (*[]repository.Order, error) {
 	args := m.Called(ctx, uid)
-	return args.Get(0).(*[]models.Order), args.Error(1)
+	return args.Get(0).(*[]repository.Order), args.Error(1)
 }
 
 func TestOrdersHandler_CreateOrder(t *testing.T) {
@@ -50,7 +50,7 @@ func TestOrdersHandler_CreateOrder(t *testing.T) {
 			requestBody: "354188083613",
 			mockOrderService: func() *MockOrderService {
 				m := &MockOrderService{}
-				m.On("CreateOrder", mock.Anything, "354188083613", mock.Anything).Return(&models.Order{}, nil)
+				m.On("CreateOrder", mock.Anything, "354188083613", mock.Anything).Return(&repository.Order{}, nil)
 				return m
 			},
 			contextTimeout:   5 * time.Second,
@@ -76,7 +76,7 @@ func TestOrdersHandler_CreateOrder(t *testing.T) {
 			mockOrderService: func() *MockOrderService {
 				m := &MockOrderService{}
 				err := appErrors.New(errors.New(""), "repeated order")
-				m.On("CreateOrder", mock.Anything, "354188083613", mock.Anything).Return((*models.Order)(nil), err)
+				m.On("CreateOrder", mock.Anything, "354188083613", mock.Anything).Return((*repository.Order)(nil), err)
 				return m
 			},
 			contextTimeout:   5 * time.Second,
@@ -90,7 +90,7 @@ func TestOrdersHandler_CreateOrder(t *testing.T) {
 			mockOrderService: func() *MockOrderService {
 				m := &MockOrderService{}
 				err := errors.New("internal server error")
-				m.On("CreateOrder", mock.Anything, "354188083613", mock.Anything).Return((*models.Order)(nil), err)
+				m.On("CreateOrder", mock.Anything, "354188083613", mock.Anything).Return((*repository.Order)(nil), err)
 				return m
 			},
 			contextTimeout:   5 * time.Second,
@@ -103,7 +103,7 @@ func TestOrdersHandler_CreateOrder(t *testing.T) {
 			requestBody: "354188083613",
 			mockOrderService: func() *MockOrderService {
 				m := &MockOrderService{}
-				m.On("CreateOrder", mock.Anything, "354188083613", mock.Anything).Return(&models.Order{}, nil)
+				m.On("CreateOrder", mock.Anything, "354188083613", mock.Anything).Return(&repository.Order{}, nil)
 				return m
 			},
 			contextTimeout:   0,
@@ -159,9 +159,9 @@ func TestOrdersHandler_GetOrders(t *testing.T) {
 			mockOrderService: func() *MockOrderService {
 				m := &MockOrderService{}
 				var accrual = 55.6
-				orders := &[]models.Order{
-					{ID: "order1", Status: models.NEW, Accrual: nil, CreatedAt: time.Now()},
-					{ID: "order2", Status: models.PROCESSED, Accrual: &accrual, CreatedAt: time.Now()},
+				orders := &[]repository.Order{
+					{ID: "order1", Status: repository.NEW, Accrual: nil, CreatedAt: time.Now()},
+					{ID: "order2", Status: repository.PROCESSED, Accrual: &accrual, CreatedAt: time.Now()},
 				}
 				m.On("GetOrders", mock.Anything, mock.Anything).Return(orders, nil)
 				return m
@@ -176,7 +176,7 @@ func TestOrdersHandler_GetOrders(t *testing.T) {
 			name: "No Orders Found",
 			mockOrderService: func() *MockOrderService {
 				m := &MockOrderService{}
-				m.On("GetOrders", mock.Anything, mock.Anything).Return(&[]models.Order{}, nil)
+				m.On("GetOrders", mock.Anything, mock.Anything).Return(&[]repository.Order{}, nil)
 				return m
 			},
 			contextTimeout:   5 * time.Second,
@@ -190,7 +190,7 @@ func TestOrdersHandler_GetOrders(t *testing.T) {
 			mockOrderService: func() *MockOrderService {
 				m := &MockOrderService{}
 				err := errors.New("internal server error")
-				m.On("GetOrders", mock.Anything, mock.Anything).Return((*[]models.Order)(nil), err)
+				m.On("GetOrders", mock.Anything, mock.Anything).Return((*[]repository.Order)(nil), err)
 				return m
 			},
 			contextTimeout:   5 * time.Second,
@@ -203,8 +203,8 @@ func TestOrdersHandler_GetOrders(t *testing.T) {
 			name: "Context Timeout",
 			mockOrderService: func() *MockOrderService {
 				m := &MockOrderService{}
-				orders := &[]models.Order{
-					{ID: "order1", Status: models.NEW, Accrual: nil, CreatedAt: time.Now()},
+				orders := &[]repository.Order{
+					{ID: "order1", Status: repository.NEW, Accrual: nil, CreatedAt: time.Now()},
 				}
 				m.On("GetOrders", mock.Anything, mock.Anything).Return(orders, nil)
 				return m
@@ -219,7 +219,7 @@ func TestOrdersHandler_GetOrders(t *testing.T) {
 			name: "Empty Orders",
 			mockOrderService: func() *MockOrderService {
 				m := &MockOrderService{}
-				m.On("GetOrders", mock.Anything, mock.Anything).Return(&[]models.Order{}, nil)
+				m.On("GetOrders", mock.Anything, mock.Anything).Return(&[]repository.Order{}, nil)
 				return m
 			},
 			contextTimeout:   5,
