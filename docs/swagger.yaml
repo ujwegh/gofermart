@@ -1,0 +1,315 @@
+basePath: /api/user
+definitions:
+  handlers.BalanceDto:
+    properties:
+      current:
+        type: number
+      withdrawn:
+        type: number
+    type: object
+  handlers.ErrorResponse:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  handlers.OrderDTO:
+    properties:
+      accrual:
+        type: number
+      number:
+        type: string
+      status:
+        type: string
+      uploaded_at:
+        type: string
+    type: object
+  handlers.UserLoginDto:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  handlers.UserRegisterDto:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  handlers.WithdrawRequestDTO:
+    properties:
+      order:
+        type: string
+      sum:
+        type: number
+    type: object
+  handlers.WithdrawalDTO:
+    properties:
+      order:
+        type: string
+      processed_at:
+        type: string
+      sum:
+        type: number
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:8080
+info:
+  contact:
+    email: nik29200018@gmail.com
+    name: Nikita Aleksandrov
+  description: This is a `gophermart` service. It allows users to create orders, credit/debit
+    their wallets and withdraw funds from their wallets using the accrual service.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Swagger Docs for Gophermart API
+  version: "1.0"
+paths:
+  /api/user/balance:
+    get:
+      description: The handler returns the current amount of loyalty points and the
+        total amount of points
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Current and withdrawn loyalty points
+          schema:
+            $ref: '#/definitions/handlers.BalanceDto'
+        "401":
+          description: Unauthorized - The user is not authorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Getting the user's current balance
+      tags:
+      - balance
+  /api/user/balance/withdraw:
+    post:
+      consumes:
+      - application/json
+      description: The handler allows an authorized user to debit points from their
+        account for a hypothetical new order.
+      parameters:
+      - description: Withdrawal Request
+        in: body
+        name: withdrawal
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.WithdrawRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful processing of the request
+        "400":
+          description: Bad Request - Unable to read body or parse body
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized - The user is not authorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "402":
+          description: Payment Required - Insufficient funds in the account
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "422":
+          description: Unprocessable Entity - Incorrect order number format
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Request for debiting funds
+      tags:
+      - balance
+  /api/user/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user using a login/password pair and returns a
+        bearer token if successful.
+      parameters:
+      - description: User Login Credentials
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UserLoginDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bearer <token>
+          schema:
+            type: string
+        "400":
+          description: Bad Request - Unable to read body or parse body or login and
+            password are required
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized - Invalid login credentials
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error - Unable to generate token
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: User login
+      tags:
+      - users
+  /api/user/orders:
+    get:
+      description: |-
+        The handler returns a list of order numbers sorted by loading time from oldest to newest for an authorized user.
+        The response includes the order number, status, accrual (if available), and the upload timestamp.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of orders with details
+          schema:
+            items:
+              $ref: '#/definitions/handlers.OrderDTO'
+            type: array
+        "204":
+          description: No orders to display
+        "401":
+          description: Unauthorized - The user is not authorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Getting a list of downloaded order numbers
+      tags:
+      - orders
+    post:
+      consumes:
+      - text/plain
+      description: The handler is only available to authenticated users and is used
+        to upload a new order number.
+      parameters:
+      - description: Order Number
+        in: body
+        name: order
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The order number has already been uploaded by this user
+        "202":
+          description: The new order number has been accepted for processing
+        "400":
+          description: Bad Request - Unable to read body or incorrect request format
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized - The user is not authenticated
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "409":
+          description: Conflict - The order number has already been uploaded by another
+            user
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "422":
+          description: Unprocessable Entity - Incorrect order number format
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Loading order number
+      tags:
+      - order
+  /api/user/register:
+    post:
+      consumes:
+      - application/json
+      description: Registration is carried out using a login/password pair. Each login
+        must be unique.
+      parameters:
+      - description: User Registration Information
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UserRegisterDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bearer <token>
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: User registration
+      tags:
+      - user
+  /api/user/withdrawals:
+    get:
+      description: The handler returns information about the withdrawal of funds,
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of withdrawals with details
+          schema:
+            items:
+              $ref: '#/definitions/handlers.WithdrawalDTO'
+            type: array
+        "204":
+          description: No withdrawals to display
+        "401":
+          description: Unauthorized - The user is not authorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Receiving information about the withdrawal of funds
+      tags:
+      - withdrawals
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
